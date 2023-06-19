@@ -32,6 +32,8 @@ class LineSegment2D {
 
 	bool PCALineFit(const Eigen::MatrixXd& point_matrix);
 
+	void fitLineTLS(const std::vector<Eigen::Vector2d>& points);
+
 	void clipLineSegment(const Eigen::Vector2d& point);
 
 	double inline getSegmentLength() {return std::sqrt(std::pow(endpoints_[0] - endpoints_[2], 2) + std::pow(endpoints_[1] - endpoints_[3], 2));}

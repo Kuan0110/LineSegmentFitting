@@ -8,7 +8,7 @@ std::vector<Vertex> HoughTransform::createCircleLookUpTable() {
 
 	theta_vec[0] = THETA_BOTTOM;
 	for(int i = 1; i < THETA_BIN; i++) {
-		theta_vec[i] = (double)theta_vec[i - 1] + 0.5; 
+		theta_vec[i] = (double)theta_vec[i - 1] + 2; 
 	}
 
 	std::vector<Vertex> table;
@@ -151,6 +151,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 
 				// clip line segment from line
 				if (point_idx.second < 0.2) {
+					// std::cout << "end point: " << curPoint.x << "," << curPoint.y << std::endl;
 					line_segment.clipLineSegment(point);
 				}
 
@@ -171,13 +172,13 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				// re-fit line for each distributed cluster 
 				Eigen::MatrixXd point_matrix = 
 					Eigen::MatrixXd::Constant(num_points, 2, 0);
-
+				
 				int count = 0;
 				int removed_count = 0;
 				for (auto index : cluster_to_remove[i]) {
 					const auto& cur_point = cloud->points[points_to_remove[index].first];
 					point_matrix.row(count++) << cur_point.x, cur_point.y;
-					// std::cout << "cluster point: " << cur_point.x << "," << cur_point.y << std::endl;
+					std::cout << "closed point: " << cur_point.x << "," << cur_point.y << std::endl;
 				}
 
 				LineSegment2D line_segment(candi_segment);
@@ -197,20 +198,23 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 						line_segment.getDistancePoint2Line(point, line_segment.coeffs());
 
 					// clip line segment from line
-					if (new_distance < 0.3) {
+					if (new_distance < 0.1) {
 						line_segment.clipLineSegment(point);
+						// std::cout << "end point: " << curPoint.x << "," << curPoint.y << std::endl;
+					}
 
 						// discard current vote cell
 						votePoint(curPoint, delta_range, min_range, false);
 						ignore_indices[point_idx.first] = true;
 						removed_count++;
-					}
+					// }
 				}
 
 				if (line_segment.getSegmentLength() > 1.0) 
 					result.emplace_back(std::move(line_segment));
 				
 				remain_points -= removed_count;
+				
 			}
 		}
 
@@ -258,7 +262,7 @@ int HoughTransform::getLine(LineCoefficients& coeffs,
 	// std::cout << "range: " << range << std::endl;
 
 	int x = index % theta_num_;
-	double theta = ((double)x / 2 + THETA_BOTTOM) / 180.0 * PI;
+	double theta = ((double)x / 0.5 + THETA_BOTTOM) / 180.0 * PI;
 	// std::cout << "theta: " << theta << std::endl;
 
   if (std::abs(theta) < 0.02) {
@@ -282,10 +286,8 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
 	PointCloudPtr candi_cloud(new pcl::PointCloud<Point>);
 	candi_cloud->points.reserve(point_indices.size());
 
-	// std::unordered_map<int, int> index_map;
 	for (int i = 0; i < point_indices.size(); i++) {
 		candi_cloud->points.push_back(cloud->points[point_indices[i].first]);
-		// index_map[i] = point_indices[i].first;
 	}
 	std::cout << "candidates: " << candi_cloud->points.size() << std::endl;
 	pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>);
@@ -293,7 +295,7 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
 
   pcl::EuclideanClusterExtraction<Point> ec;
   ec.setClusterTolerance(1);
-  ec.setMinClusterSize(5);
+  ec.setMinClusterSize(3);
   ec.setMaxClusterSize(10000);
   ec.setSearchMethod(tree);
   ec.setInputCloud(candi_cloud);

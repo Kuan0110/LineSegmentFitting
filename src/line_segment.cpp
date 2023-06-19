@@ -48,7 +48,7 @@ std::vector<std::pair<int, double>> LineSegment2D::getPointIndicesCloseToLine(
 		const auto& curPoint = cloud->points[i];
 		eigen_point << curPoint.x, curPoint.y;
 		double distance = getDistancePoint2Line(eigen_point, coeffs);
-		
+
 		if (distance < distance_thresh) {
 			point_indices.emplace_back(std::make_pair(i, distance));
 		}
@@ -76,7 +76,7 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 	const auto point_indices =
 			LineSegment2D::getPointIndicesCloseToLine(cloud_, coeffs_, distance_Thresh, ignore_indices);
 
-	if (point_indices.size() < 10) {
+	if (point_indices.size() < 5) {
 		std::cout << "point closed to line not enough" << std::endl;
 		return false;
 	}
@@ -117,6 +117,35 @@ bool LineSegment2D::PCALineFit(const Eigen::MatrixXd& point_matrix) {
 	coeffs_[2] = eig_vecs(0,1) * centroid.y() - eig_vecs(1,1) * centroid.x();
 
 	return true;
+}
+
+void LineSegment2D::fitLineTLS(const std::vector<Eigen::Vector2d>& points) {
+	int n = points.size();
+
+	Eigen::Vector2d mean(0.0, 0.0);
+	for (const auto& point : points) {
+			mean += point;
+	}
+	mean /= n;
+
+	Eigen::Matrix2d covMatrix(0.0, 0.0, 0.0, 0.0);
+	for (const auto& point : points) {
+			Eigen::Vector2d diff = point - mean;
+			covMatrix += diff * diff.transpose();
+	}
+	covMatrix /= n;
+
+	Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(covMatrix);
+	Eigen::Vector2d direction = eigensolver.eigenvectors().col(0);
+
+	Eigen::Vector2d startPoint = mean - direction;
+	Eigen::Vector2d endPoint = mean + direction;
+
+	std::cout << "TLS Line: " 
+						<< startPoint[0] << "," << startPoint[1] << "," 
+						<< endPoint[0] << "," << endPoint[1] << std::endl;
+
+	return;
 }
 
 void LineSegment2D::clipLineSegment(const Eigen::Vector2d& point) {

@@ -2,6 +2,7 @@
 #include <chrono>
 
 #include <pcl/io/pcd_io.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include "line_segment.h"
 #include "hough_transform.h"
@@ -14,7 +15,18 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  std::cout << "Number of original cloud: " << cloud->points.size() << std::endl;
+  // 创建体素化滤波器对象
+  pcl::VoxelGrid<pcl::PointXYZ> voxelGrid;
+  voxelGrid.setInputCloud(cloud);
+  voxelGrid.setLeafSize(0.1f, 0.1f, 0.1f); // 设置体素的尺寸
+
+  // 执行体素化滤波
+  pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>);
+  voxelGrid.filter(*filteredCloud);
+
+  pcl::io::savePCDFile("merged_cloud6.pcd", *filteredCloud);
+
+  std::cout << "Number of original cloud: " << filteredCloud->points.size() << std::endl;
 
   auto start = std::chrono::high_resolution_clock::now();
 

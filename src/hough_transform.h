@@ -21,7 +21,7 @@ using SegmentClusters = std::vector<std::vector<int>>;
 
 class HoughTransform {
 public:
-	static constexpr int THETA_BIN = (THETA_TOP-THETA_BOTTOM)*2;
+	static constexpr int THETA_BIN = (THETA_TOP-THETA_BOTTOM)*0.5;
 
 	static std::vector<Vertex> createCircleLookUpTable();
 
