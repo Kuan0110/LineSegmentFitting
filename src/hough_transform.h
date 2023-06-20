@@ -20,7 +20,8 @@ using NeighborIndices = std::vector<std::pair<int, double>>;
 using SegmentClusters = std::vector<std::vector<int>>;
 
 class HoughTransform {
-public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ public:
 	static constexpr int THETA_BIN = (THETA_TOP-THETA_BOTTOM)*0.5;
 
 	static std::vector<Vertex> createCircleLookUpTable();
@@ -31,7 +32,7 @@ public:
 
 	bool run(const PointCloudPtr& cloud, LineSegments& line_segments);
 
-private:
+ private:
 	void performHT(const PointCloudPtr& cloud, LineSegments& result);
 
 	void votePoint(const Point& point, 

@@ -6,6 +6,7 @@
 #include <pcl/common/common.h>
 
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
 namespace line_fitting {
 
@@ -14,6 +15,7 @@ typedef pcl::PointCloud<Point>::Ptr PointCloudPtr;
 typedef std::array<double, 3> LineCoefficients;
 
 class LineSegment2D {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  public:
 	static std::vector<std::pair<int, double>> getPointIndicesCloseToLine(
 		const PointCloudPtr& cloud, const LineCoefficients& coeffs, const double distance_thresh,
@@ -32,7 +34,7 @@ class LineSegment2D {
 
 	bool PCALineFit(const Eigen::MatrixXd& point_matrix);
 
-	void fitLineTLS(const std::vector<Eigen::Vector2d>& points);
+	bool fitLineTLS(const Eigen::MatrixXd& point_matrix);
 
 	void clipLineSegment(const Eigen::Vector2d& point);
 

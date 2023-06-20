@@ -90,7 +90,7 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 		point_matrix.row(count++) << cur_point.x, cur_point.y;
 	}
 
-	if (!PCALineFit(point_matrix))
+	if (!fitLineTLS(point_matrix))
 		return false;
 
 	// std::cout << "refined line: " << coeffs_[0] << " " << coeffs_[1] << " " << coeffs_[2] << std::endl;
@@ -119,33 +119,26 @@ bool LineSegment2D::PCALineFit(const Eigen::MatrixXd& point_matrix) {
 	return true;
 }
 
-void LineSegment2D::fitLineTLS(const std::vector<Eigen::Vector2d>& points) {
-	int n = points.size();
+bool LineSegment2D::fitLineTLS(const Eigen::MatrixXd& point_matrix) {
+	// normalize point cloud
+	auto centroid = point_matrix.colwise().mean();
+	Eigen::MatrixXd centered_matrix = point_matrix.rowwise() - centroid;
+	Eigen::MatrixXd scatter_matrix = (centered_matrix.transpose() * centered_matrix);
 
-	Eigen::Vector2d mean(0.0, 0.0);
-	for (const auto& point : points) {
-			mean += point;
-	}
-	mean /= n;
+	Eigen::JacobiSVD<Eigen::MatrixXd> svd(scatter_matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	Eigen::MatrixXd V = svd.matrixV();
 
-	Eigen::Matrix2d covMatrix(0.0, 0.0, 0.0, 0.0);
-	for (const auto& point : points) {
-			Eigen::Vector2d diff = point - mean;
-			covMatrix += diff * diff.transpose();
-	}
-	covMatrix /= n;
+	Eigen::Vector2d lastColumn = V.col(V.cols() - 1);
 
-	Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(covMatrix);
-	Eigen::Vector2d direction = eigensolver.eigenvectors().col(0);
+	coeffs_[0] = lastColumn[0];
+	coeffs_[1] = lastColumn[1];
+	coeffs_[2] = -(lastColumn[1] * centroid.y() + lastColumn[0] * centroid.x());
 
-	Eigen::Vector2d startPoint = mean - direction;
-	Eigen::Vector2d endPoint = mean + direction;
+	// std::cout << "TLS Line: " 
+	// 					<< startPoint[0] << "," << startPoint[1] << "," 
+	// 					<< endPoint[0] << "," << endPoint[1] << std::endl;
 
-	std::cout << "TLS Line: " 
-						<< startPoint[0] << "," << startPoint[1] << "," 
-						<< endPoint[0] << "," << endPoint[1] << std::endl;
-
-	return;
+	return true;
 }
 
 void LineSegment2D::clipLineSegment(const Eigen::Vector2d& point) {
