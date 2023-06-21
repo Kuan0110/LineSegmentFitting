@@ -42,7 +42,7 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
 
   pcl::EuclideanClusterExtraction<Point> ec;
   ec.setClusterTolerance(0.15);
-  ec.setMinClusterSize(100);
+  ec.setMinClusterSize(70);
   ec.setMaxClusterSize(10000);
   ec.setSearchMethod(tree);
   ec.setInputCloud(cloud);
@@ -139,15 +139,26 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 		SegmentClusters cluster_to_remove =
 			seperateDistributedPoints(cloud, points_to_remove);
 
-		if (cluster_to_remove.size() == 1) {
-			LineSegment2D line_segment(candi_segment);
-
-			for (int j = 0; j < cluster_to_remove[0].size(); ++j) {
-				const auto& point_idx = points_to_remove[cluster_to_remove[0][j]];
-				const auto& curPoint = cloud->points[point_idx.first];
+		if (cluster_to_remove.size() == 0) {
+			for (const auto& point_idx : points_to_remove) {
+				const auto& cur_point = cloud->points[point_idx.first];
 				
 				Eigen::Vector2d point;
-				point << curPoint.x, curPoint.y;
+				point << cur_point.x, cur_point.y;
+				std::cout << "closed points: " << cur_point.x << "," << cur_point.y << std::endl;
+
+				// discard current vote cell
+				votePoint(cur_point, delta_range, min_range, false);
+			}			
+		} else if (cluster_to_remove.size() == 1) {
+			LineSegment2D line_segment(candi_segment);
+
+			for (const auto& point_idx : points_to_remove) {
+				const auto& cur_point = cloud->points[point_idx.first];
+				
+				Eigen::Vector2d point;
+				point << cur_point.x, cur_point.y;
+				std::cout << "closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 
 				// clip line segment from line
 				if (point_idx.second < 0.2) {
@@ -156,14 +167,14 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				}
 
 				// discard current vote cell
-				votePoint(curPoint, delta_range, min_range, false);
+				votePoint(cur_point, delta_range, min_range, false);
 				ignore_indices[point_idx.first] = true;
 			}
 
 			if (line_segment.getSegmentLength() > 1.0) 
 				result.emplace_back(std::move(line_segment));
 			
-			remain_points -= cluster_to_remove[0].size();
+			remain_points -= points_to_remove.size();
 
 		} else if (cluster_to_remove.size() > 1) {
 			for (int i = 0; i < cluster_to_remove.size(); i++) {
@@ -177,19 +188,21 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				int removed_count = 0;
 				for (auto index : cluster_to_remove[i]) {
 					if (points_to_remove[index].second < 0.2) {
+						std::cout << "distributed point: " << cloud->points[points_to_remove[index].first].x << "," << cloud->points[points_to_remove[index].first].y << std::endl;
 						const auto& cur_point = cloud->points[points_to_remove[index].first];
 						point_matrix(count, 0) = cur_point.x;
 						point_matrix(count++, 1) = cur_point.y;
-						// std::cout << "closed point: " << cur_point.x << "," << cur_point.y << std::endl;
+						std::cout << "closed point: " << cur_point.x << "," << cur_point.y << std::endl;
 					}
 				}
+				if (count == 0) continue;
 				point_matrix.conservativeResize(count, 2);
-
+				std::cout << "distributed refine" << std::endl;
 				LineSegment2D line_segment(candi_segment);
 				if (!line_segment.fitLineTLS(point_matrix)) 
 					continue;
 
-				// std::cout << "cluster refined line: " << line_segment.coeffs()[0] << "," << line_segment.coeffs()[1] << "," << line_segment.coeffs()[2] << std::endl;
+				std::cout << "cluster refined line: " << line_segment.coeffs()[0] << "," << line_segment.coeffs()[1] << "," << line_segment.coeffs()[2] << std::endl;
 
 				if (candi_segment.coeffs()[1] != 0 && line_segment.coeffs()[1] != 0) {
 					double angle_candi = std::atan2(-candi_segment.coeffs()[0], candi_segment.coeffs()[1]);
@@ -205,7 +218,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					if (std::abs(PI/2-angle_candi) > 0.03492)
 						continue;					
 				}
-
+				std::cout << "distributed cut" << std::endl;
 				for (int j = 0; j < num_points; ++j) {
 					const auto& point_idx = points_to_remove[cluster_to_remove[i][j]];
 					const auto& curPoint = cloud->points[point_idx.first];
@@ -235,6 +248,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				remain_points -= removed_count;
 			}
 		}
+		std::cout << "end" << std::endl;
 	}
 
 	return;
@@ -310,16 +324,15 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
   tree->setInputCloud(candi_cloud);
 
   pcl::EuclideanClusterExtraction<Point> ec;
-  ec.setClusterTolerance(1);
-  ec.setMinClusterSize(3);
+  ec.setClusterTolerance(0.5);
+  ec.setMinClusterSize(15);
   ec.setMaxClusterSize(10000);
   ec.setSearchMethod(tree);
   ec.setInputCloud(candi_cloud);
 
 	ClusterIndices clusters;
   ec.extract(clusters);
-	
-	
+
 	SegmentClusters point_clusters;
 	point_clusters.reserve(clusters.size());
 	for (int i = 0; i < clusters.size(); i++) {
@@ -331,7 +344,7 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
 		point_clusters.push_back(points);
   }
 
-	// std::cout << "line segment cluster number: " << point_clusters.size() << std::endl;
+	std::cout << "line segment cluster number: " << point_clusters.size() << std::endl;
 	return std::move(point_clusters);
 }
 

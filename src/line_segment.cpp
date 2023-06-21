@@ -76,7 +76,7 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 	const auto point_indices =
 			LineSegment2D::getPointIndicesCloseToLine(cloud_, coeffs_, distance_Thresh, ignore_indices);
 
-	if (point_indices.size() < 5) {
+	if (point_indices.size() < 15) {
 		std::cout << "point closed to line not enough" << std::endl;
 		return false;
 	}
@@ -93,8 +93,8 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 	if (!fitLineTLS(point_matrix))
 		return false;
 
-	// std::cout << "refined line: " << coeffs_[0] << " " << coeffs_[1] << " " << coeffs_[2] << std::endl;
-	// std::cout << "" << std::endl;
+	std::cout << "refined line: " << coeffs_[0] << "," << coeffs_[1] << "," << coeffs_[2] << std::endl;
+	std::cout << "" << std::endl;
 
 	return true;
 }
@@ -124,7 +124,6 @@ bool LineSegment2D::fitLineTLS(const Eigen::MatrixXd& point_matrix) {
 	auto centroid = point_matrix.colwise().mean();
 	Eigen::MatrixXd centered_matrix = point_matrix.rowwise() - centroid;
 	Eigen::MatrixXd scatter_matrix = (centered_matrix.transpose() * centered_matrix);
-
 	Eigen::JacobiSVD<Eigen::MatrixXd> svd(scatter_matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
 	Eigen::MatrixXd V = svd.matrixV();
 
@@ -133,10 +132,6 @@ bool LineSegment2D::fitLineTLS(const Eigen::MatrixXd& point_matrix) {
 	coeffs_[0] = lastColumn[0];
 	coeffs_[1] = lastColumn[1];
 	coeffs_[2] = -(lastColumn[1] * centroid.y() + lastColumn[0] * centroid.x());
-
-	// std::cout << "TLS Line: " 
-	// 					<< startPoint[0] << "," << startPoint[1] << "," 
-	// 					<< endPoint[0] << "," << endPoint[1] << std::endl;
 
 	return true;
 }
