@@ -33,12 +33,12 @@ def getLine(filename):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             a.append([float(num_list[0]), float(num_list[1]), float(num_list[2]), float(num_list[3])])
-        elif (line.find('closed point') != -1):
+        elif (line.find('closed points') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             b_x.append(float(num_list[0]))
             b_y.append(float(num_list[1]))
-        elif (line.find('centroid') != -1):
+        elif (line.find('distributed point') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
@@ -47,26 +47,25 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y]
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/lane_extraction/build/data/merged_cloud5.asc'
+    filename1 = '/home/dell/slam/LineSegmentFitting/build/data/merged_cloud7.asc'
     filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c = getLine(filename2)
-    
-    m = [0.67641,0.736526,0.00688689]
+    m = [-0.0802381,0.996776,-87.2801]
     n = [0.401378,0.915913,1.29134]
-    # plt.plot(x1, y1, 'co', label='point cloud', markersize=1)
     
-    # for i in range(len(b)):
-    #     plt.plot(b[0], b[1], 'mo', label='distributed points', markersize=1)
+    plt.plot(x1, y1, 'co', label='point cloud', markersize=1)
+    
+    for i in range(len(c)):
+        plt.plot(c[0], c[1], 'mo', label='distributed points', markersize=1)
+    for i in range(len(b)):
+        plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
 
     for i in range(len(a)):
         plt.plot([a[i][0],a[i][2]], [a[i][1],a[i][3]], color = 'r', label='fitted lines')
 
     # plt.plot([30,(-m[0]*30-m[2])/m[1]], [45,(-m[0]*45+m[2])/m[1]], color = 'r', label='fitted lines')
     # plt.plot([30,(-n[0]*30-n[2])/n[1]], [45,(-n[0]*45+n[2])/n[1]], color = 'r', label='fitted lines')
-
-    # for i in range(len(c)):
-    #     plt.plot(c[0], c[1], 'co', label='distributed points', markersize=1)
     
     plt.xlim(-100,300)
     plt.ylim(-100,300)
