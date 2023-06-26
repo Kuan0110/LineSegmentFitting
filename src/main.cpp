@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  line_fitting::HoughTransform transformer(10,800,0.4);
+  line_fitting::HoughTransform transformer(8,800,0.3);
 
   line_fitting::LineSegments line_segments;
   if (transformer.run(cloud, line_segments)) {

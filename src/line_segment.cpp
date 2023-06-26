@@ -5,7 +5,7 @@ namespace line_fitting {
 LineSegment2D::LineSegment2D()
   : cloud_(nullptr)
 	, coeffs_({0.0, 0.0, 0.0})
-	, inlier_indices_()
+	, raw_points_()
 	, endpoints_({0.0, 0.0, 0.0, 0.0})
 {
 }
@@ -16,7 +16,7 @@ LineSegment2D::LineSegment2D(
 		const std::array<double, 4>& range)
 	: cloud_(cloud)
 	, coeffs_(coeffs)
-	, inlier_indices_()
+	, raw_points_()
 	, endpoints_(range) 
 {
 }
@@ -25,7 +25,7 @@ LineSegment2D::LineSegment2D(
 		const LineSegment2D& line_segment)
 	: cloud_(line_segment.cloud_)
 	, coeffs_(line_segment.coeffs_)
-	, inlier_indices_(line_segment.inlier_indices_)
+	, raw_points_(line_segment.raw_points_)
 	, endpoints_(line_segment.endpoints_) 
 {
 }

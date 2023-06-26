@@ -40,22 +40,27 @@ class HoughTransform {
 
 	int getLine(LineCoefficients& coeffs, 
 			const double min_range, const double delta_range,
-			const std::vector<std::size_t>& accumulator_cell_indices) const;
+			const std::vector<std::size_t>& accumulator_cell_indices);
 
 	SegmentClusters seperateDistributedPoints(const PointCloudPtr& points, 
 			const NeighborIndices& point_indices);
 
+	void addLineSegment(const LineSegment2D& new_line, LineSegments& lines);
+
 	double calcNorm(const Point& point) const;
 
+	void inline deductVote(const int index) {accumulator_[index]--;}
+
+ private:
 	std::vector<Vertex> circle_; // [cos theta, sin theta]
+	std::vector<int> accumulator_;
 
 	int rho_num_;
 	int theta_num_;
 	int peak_num_;
 	int min_num_vote_;
+	int cur_vote_index_;
 	double distance_thresh_;
-
-	std::vector<int> accumulator_;
 };
 
 }
