@@ -22,7 +22,7 @@ using SegmentClusters = std::vector<std::vector<int>>;
 class HoughTransform {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  public:
-	static constexpr int THETA_BIN = (THETA_TOP-THETA_BOTTOM)*0.5;
+	static constexpr int THETA_BIN = (THETA_TOP-THETA_BOTTOM)*2;
 
 	static std::vector<Vertex> createCircleLookUpTable();
 
@@ -61,6 +61,8 @@ class HoughTransform {
 	}
 
 	void inline deductVote(const int index) {accumulator_[index]--;}
+
+	void inline removeVote(const int index) {accumulator_[index] = 0;}
 
  private:
 	std::vector<Vertex> circle_; // [cos theta, sin theta]

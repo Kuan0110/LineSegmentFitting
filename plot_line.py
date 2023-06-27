@@ -47,8 +47,8 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y]
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/LineSegmentFitting/build/data/merged_cloud7.asc'
-    filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
+    filename1 = '/home/kuan/Hozon/LineSegmentFitting/data/merged_cloud2.asc'
+    filename2 = '/home/kuan/Hozon/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c = getLine(filename2)
     m = [-0.0802381,0.996776,-87.2801]
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     
     plt.plot(x1, y1, 'co', label='point cloud', markersize=1)
     
-    for i in range(len(c)):
-        plt.plot(c[0], c[1], 'mo', label='distributed points', markersize=1)
+    # for i in range(len(c)):
+    #     plt.plot(c[0], c[1], 'mo', label='distributed points', markersize=1)
     for i in range(len(b)):
         plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
 

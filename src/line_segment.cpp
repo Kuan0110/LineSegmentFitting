@@ -90,7 +90,7 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 		point_matrix.row(count++) << cur_point.x, cur_point.y;
 	}
 
-	if (!fitLineTLS(point_matrix))
+	if (!PCALineFit(point_matrix))
 		return false;
 
 	std::cout << "refined line: " << coeffs_[0] << "," << coeffs_[1] << "," << coeffs_[2] << std::endl;
