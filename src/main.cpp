@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  line_fitting::HoughTransform transformer(8,800,0.3);
+  line_fitting::HoughTransform transformer(8,800,0.5);
 
   line_fitting::LineSegments line_segments;
   if (transformer.run(cloud, line_segments)) {
@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     std::cout << "" << std::endl;
     for (const auto& line : line_segments)
       std::cout << "line function: " 
-                << line.endpoints()[0] << "," << line.endpoints()[1] << "," 
-                << line.endpoints()[2] << "," << line.endpoints()[3] << std::endl;
+                << line.endpoints()[0].x() << "," << line.endpoints()[0].y() << "," 
+                << line.endpoints()[1].x() << "," << line.endpoints()[1].y() << std::endl;
   } else {
     std::cerr << "Failed to run hough transform" << std::endl;
     return EXIT_FAILURE;

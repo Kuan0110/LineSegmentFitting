@@ -6,14 +6,14 @@ LineSegment2D::LineSegment2D()
   : cloud_(nullptr)
 	, coeffs_({0.0, 0.0, 0.0})
 	, raw_points_()
-	, endpoints_({0.0, 0.0, 0.0, 0.0})
+	, endpoints_({Point2d(0.0,0.0), Point2d(0.0,0.0)})
 {
 }
 
 LineSegment2D::LineSegment2D(
 		const PointCloudPtr& cloud, 
 		const LineCoefficients& coeffs, 
-		const std::array<double, 4>& range)
+		const std::vector<Point2d>& range)
 	: cloud_(cloud)
 	, coeffs_(coeffs)
 	, raw_points_()
@@ -37,7 +37,7 @@ std::vector<std::pair<int, double>> LineSegment2D::getPointIndicesCloseToLine(
 		return {};
 	}
 
-	Eigen::Vector2d eigen_point;
+	Point2d eigen_point;
 	std::vector<std::pair<int, double>> point_indices;
 
 	for (std::size_t i = 0; i < cloud->size(); ++i) {
@@ -58,15 +58,15 @@ std::vector<std::pair<int, double>> LineSegment2D::getPointIndicesCloseToLine(
 }
 
 double LineSegment2D::getDistancePoint2Line(
-		const Eigen::Vector2d& point, 
+		const Point2d& point, 
 		const LineCoefficients& coeffs) {
 	if (coeffs[1] == 0) 
 		return std::abs(point[0] + coeffs[2]);
 	
-	Eigen::Vector2d hypot;
+	Point2d hypot;
 	hypot << 0.0, (-point[0] * coeffs[0] - coeffs[2]) / coeffs[1] - point[1];
 
-	Eigen::Vector2d norm;
+	Point2d norm;
 	norm << coeffs[0], coeffs[1];
 
 	return std::abs(hypot.dot(norm));
@@ -127,7 +127,7 @@ bool LineSegment2D::fitLineTLS(const Eigen::MatrixXd& point_matrix) {
 	Eigen::JacobiSVD<Eigen::MatrixXd> svd(scatter_matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
 	Eigen::MatrixXd V = svd.matrixV();
 
-	Eigen::Vector2d lastColumn = V.col(V.cols() - 1);
+	Point2d lastColumn = V.col(V.cols() - 1);
 
 	coeffs_[0] = lastColumn[0];
 	coeffs_[1] = lastColumn[1];
@@ -136,35 +136,35 @@ bool LineSegment2D::fitLineTLS(const Eigen::MatrixXd& point_matrix) {
 	return true;
 }
 
-void LineSegment2D::clipLineSegment(const Eigen::Vector2d& point) {
+void LineSegment2D::clipLineSegment(const Point2d& point) {
 	if (coeffs_[1] != 0.0) {
 		double proj_y = 
 			(point[0] * coeffs_[0] + coeffs_[2]) / -coeffs_[1];
 
-		Eigen::Vector2d u, v;
+		Point2d u, v;
 		v << -coeffs_[1], coeffs_[0];
 		u << 0, point[1] - proj_y;
 		double scale = u.dot(v) / v.dot(v);
 
-		Eigen::Vector2d proj_point;
+		Point2d proj_point;
 		proj_point << point[0] + scale * v[0], proj_y + scale * v[1];
 
-		if (proj_point[0] < endpoints_[0]) {
-			endpoints_[0] = proj_point[0];
-			endpoints_[1] = proj_point[1];
+		if (proj_point[0] < endpoints_[0].x()) {
+			endpoints_[0].x() = proj_point[0];
+			endpoints_[0].y() = proj_point[1];
 		} 
-		if (proj_point[0] > endpoints_[2]) {
-			endpoints_[2] = proj_point[0];
-			endpoints_[3] = proj_point[1];
+		if (proj_point[0] > endpoints_[1].x()) {
+			endpoints_[1].x() = proj_point[0];
+			endpoints_[1].y() = proj_point[1];
 		}
 	} else {
-		if (point[1] < endpoints_[1]) {
-			endpoints_[0] = -coeffs_[2] / coeffs_[0];
-      endpoints_[1] = point[1];
+		if (point[1] < endpoints_[0].y()) {
+			endpoints_[0].x() = -coeffs_[2] / coeffs_[0];
+      endpoints_[0].y() = point[1];
 		} 
-		if (point[1] > endpoints_[3]) {
-			endpoints_[2] = -coeffs_[2] / coeffs_[0];
-      endpoints_[3] = point[1];
+		if (point[1] > endpoints_[1].y()) {
+			endpoints_[1].x() = -coeffs_[2] / coeffs_[0];
+      endpoints_[1].y() = point[1];
 		}
 	}
 	

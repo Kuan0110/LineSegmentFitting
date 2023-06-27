@@ -35,6 +35,8 @@ class HoughTransform {
  private:
 	void performHT(const PointCloudPtr& cloud, LineSegments& result);
 
+	void intersectLineSegments(LineSegments& line_segments);
+
 	void votePoint(const Point& point, 
 			const double delta_range, const double min_range, bool to_add);
 
@@ -45,9 +47,18 @@ class HoughTransform {
 	SegmentClusters seperateDistributedPoints(const PointCloudPtr& points, 
 			const NeighborIndices& point_indices);
 
+	Point2d getIntersection(
+			const LineSegment2D& line1, const LineSegment2D& line2);
+
 	void addLineSegment(const LineSegment2D& new_line, LineSegments& lines);
 
-	double calcNorm(const Point& point) const;
+	double inline calcNorm(const Point& point) const {
+		return std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+	}
+
+	double inline calcDist(const Point2d& p1, const Point2d& p2) const {
+		return std::sqrt(std::pow(p1.x() - p2.x(), 2) + std::pow(p1.y() - p2.y(), 2));
+	}
 
 	void inline deductVote(const int index) {accumulator_[index]--;}
 

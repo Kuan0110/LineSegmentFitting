@@ -10,6 +10,7 @@
 
 namespace line_fitting {
 
+typedef Eigen::Vector2d Point2d;
 typedef pcl::PointXYZ Point;
 typedef pcl::PointCloud<Point>::Ptr PointCloudPtr;
 typedef std::array<double, 3> LineCoefficients;
@@ -21,12 +22,12 @@ class LineSegment2D {
 		const PointCloudPtr& cloud, const LineCoefficients& coeffs, const double distance_thresh,
 		const std::vector<char>& ignore_point_indices);
 
-	static double getDistancePoint2Line(const Eigen::Vector2d& point, const LineCoefficients& coeffs);
+	static double getDistancePoint2Line(const Point2d& point, const LineCoefficients& coeffs);
 
 	LineSegment2D();
 	
 	LineSegment2D(const PointCloudPtr& cloud, 
-		const LineCoefficients& coeffs, const std::array<double, 4>& range);
+		const LineCoefficients& coeffs, const std::vector<Point2d>& range);
 
 	LineSegment2D(const LineSegment2D& line_segment);
 
@@ -36,11 +37,15 @@ class LineSegment2D {
 
 	bool fitLineTLS(const Eigen::MatrixXd& point_matrix);
 
-	void clipLineSegment(const Eigen::Vector2d& point);
+	void clipLineSegment(const Point2d& point);
 
-	void inline addInliers(const Eigen::Vector2d& inlier) {raw_points_.push_back(inlier);}
+	void inline addInliers(const Point2d& inlier) {raw_points_.push_back(inlier);}
 
-	double inline getSegmentLength() {return std::sqrt(std::pow(endpoints_[0] - endpoints_[2], 2) + std::pow(endpoints_[1] - endpoints_[3], 2));}
+	double inline getSegmentLength() {
+		return std::sqrt(std::pow(endpoints_[0].x() - endpoints_[1].x(), 2) + 
+										 std::pow(endpoints_[0].y() - endpoints_[1].y(), 2));}
+
+	void inline setEndpoints(int idx, const Point2d& p) {endpoints_[idx] = p;}
 
 	const auto& coeffs() const {return coeffs_;}
 
@@ -58,8 +63,8 @@ class LineSegment2D {
  private:
 	const PointCloudPtr& cloud_;
 	LineCoefficients coeffs_;
-	std::array<double, 4> endpoints_;
-	std::vector<Eigen::Vector2d> raw_points_;
+	std::vector<Point2d> endpoints_;
+	std::vector<Point2d> raw_points_;
 };
 }  // namespace line_fitting
 

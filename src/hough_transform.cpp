@@ -79,6 +79,8 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
     // viewer.addPointCloud(cluster_cloud, colorHandler, "lane" + std::to_string(i));
 
 		performHT(cluster_cloud, line_segments);
+
+		intersectLineSegments(line_segments);
   }
 
 	// // Start visualization
@@ -124,7 +126,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 
 		// refine line with points closed to line
 		LineSegment2D candi_segment(cloud, coeffs, 
-			{max_bound.x, max_bound.y, min_bound.x, min_bound.y});
+			{Point2d(max_bound.x, max_bound.y), 
+			 Point2d(min_bound.x, min_bound.y)});
 		if (!candi_segment.refine(distance_thresh_, ignore_indices)) {
 			std::cout << "refine failed" << std::endl;
 			break;
@@ -143,7 +146,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			for (const auto& point_idx : points_to_remove) {
 				const auto& cur_point = cloud->points[point_idx.first];
 				
-				Eigen::Vector2d point;
+				Point2d point;
 				point << cur_point.x, cur_point.y;
 				// std::cout << "0 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 
@@ -157,12 +160,11 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			for (const auto& point_idx : points_to_remove) {
 				const auto& cur_point = cloud->points[point_idx.first];
 				
-				Eigen::Vector2d point;
+				Point2d point;
 				point << cur_point.x, cur_point.y;
-				std::cout << "1 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 				// clip line segment from line
-				if (point_idx.second < 0.3) {
-					// std::cout << "end point: " << curPoint.x << "," << curPoint.y << std::endl;
+				if (point_idx.second < 0.2) {
+					std::cout << "1 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 					line_segment.addInliers({point.x(), point.y()});
 					line_segment.clipLineSegment(point);
 				}
@@ -171,10 +173,10 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				votePoint(cur_point, delta_range, min_range, false);
 				ignore_indices[point_idx.first] = true;
 			}
-			std::cout << "line endpoint: " << line_segment.endpoints()[0] << "," << line_segment.endpoints()[1] << "," 
-						<< line_segment.endpoints()[2] << "," << line_segment.endpoints()[3] << std::endl;
-			if (line_segment.getSegmentLength() > 0.5) {
-				checkLineSegments(line_segment, result); 
+			std::cout << "line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
+						<< line_segment.endpoints()[1].x() << "," << line_segment.endpoints()[1].y() << std::endl;
+			if (line_segment.getSegmentLength() > 1) {
+				// checkLineSegments(line_segment, result); 
 				result.emplace_back(std::move(line_segment));
 			}
 			
@@ -245,7 +247,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					const auto& point_idx = points_to_remove[cluster_to_remove[i][j]];
 					const auto& curPoint = cloud->points[point_idx.first];
 					
-					Eigen::Vector2d point;
+					Point2d point;
 					point << curPoint.x, curPoint.y;
 
 					double new_distance = 
@@ -265,8 +267,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				}
 
 				if (line_segment.getSegmentLength() > 1.0) {
-					std::cout << "line endpoint: " << line_segment.endpoints()[0] << "," << line_segment.endpoints()[1] << "," 
-                << line_segment.endpoints()[2] << "," << line_segment.endpoints()[3] << std::endl;
+					std::cout << "line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
+                << line_segment.endpoints()[1].x() << "," << line_segment.endpoints()[1].y() << std::endl;
 					result.emplace_back(std::move(line_segment));
 				}
 				
@@ -374,24 +376,99 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
 }
 
 void HoughTransform::addLineSegment(const LineSegment2D& new_line, LineSegments& lines) {
-	for (auto& line : lines) {
-		Eigen::Vector2d point1, point2;
-		point1 << new_line.endpoints()[0], new_line.endpoints()[1];
-		point2 << new_line.endpoints()[2], new_line.endpoints()[3];
+	// for (auto& line : lines) {
+	// 	Point2d point1, point2;
+	// 	point1 << new_line.endpoints()[0], new_line.endpoints()[1];
+	// 	point2 << new_line.endpoints()[2], new_line.endpoints()[3];
 
-		double distance1 = getDistancePoint2Line(point1, line.coeffs());
-		double distance2 = getDistancePoint2Line(point2, line.coeffs());
+	// 	double distance1 = getDistancePoint2Line(point1, line.coeffs());
+	// 	double distance2 = getDistancePoint2Line(point2, line.coeffs());
 
-		if (distance1 < 0.8 && distance2 < 0.8 && std::abs(distance1 - distance2) < 0.3) {
-			Eigen::MatrixXd point_matrix(new_line.inliers().size() + line.inliers().size(), 2);
+	// 	if (distance1 < 0.8 && distance2 < 0.8 && std::abs(distance1 - distance2) < 0.3) {
+	// 		Eigen::MatrixXd point_matrix(new_line.inliers().size() + line.inliers().size(), 2);
 
-			for ()
-		}
-	}
+	// 		for ()
+	// 	}
+	// }
 }
 
-double HoughTransform::calcNorm(const Point& point) const {
-  return std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
+	int num_endpoint = 2*line_segments.size();
+	Eigen::MatrixXd dis_matrix = 
+		Eigen::MatrixXd::Constant(num_endpoint, num_endpoint, 100.0);
+
+	for (size_t j = 0; j < line_segments.size(); j++) {
+		std::vector<Point2d> endpoints = line_segments[j].endpoints();
+		for (size_t k = j + 1; k < line_segments.size(); k++) {
+			std::vector<Point2d> candi_endpoints = line_segments[k].endpoints();
+			double dist1 = calcDist(candi_endpoints[0], endpoints[0]);
+			double dist2 = calcDist(candi_endpoints[1], endpoints[0]);
+			dis_matrix(2*j,2*k) = dist1;
+			dis_matrix(2*j,2*k+1) = dist2;
+
+			double dist3 = calcDist(candi_endpoints[0], endpoints[1]);
+			double dist4 = calcDist(candi_endpoints[1], endpoints[1]);
+			dis_matrix(2*j+1,2*k) = dist3;
+			dis_matrix(2*j+1,2*k+1) = dist4;			
+		}
+	}
+
+	std::cout << "dist matrix:\n" << dis_matrix << std::endl;
+
+	std::vector<std::pair<int, int>> closed_pairs;
+	for (int i = 0; i < dis_matrix.rows(); ++i) {
+		Eigen::VectorXd::Index min_row;
+		double min_val = dis_matrix.row(i).minCoeff(&min_row);
+		if (min_val > 2.0) continue;
+		closed_pairs.push_back(std::make_pair(i, min_row));
+	}
+
+	for (int i = 0; i < closed_pairs.size(); ++i) {
+		std::cout << "pair index: " << closed_pairs[i].first << "," << closed_pairs[i].second << std::endl;
+		Point2d cross_point = getIntersection(
+			line_segments[closed_pairs[i].first/2], line_segments[closed_pairs[i].second/2]);
+		std::cout << "cross point: " << cross_point.x() << "," << cross_point.y() << std::endl;
+		
+		Point2d p1 = line_segments[closed_pairs[i].first/2].endpoints()[closed_pairs[i].first%2];
+		Point2d p2 = line_segments[closed_pairs[i].second/2].endpoints()[closed_pairs[i].second%2];
+		double d1 = calcDist(cross_point, p1);
+		double d2 = calcDist(cross_point, p2);
+		std::cout << "distance: " << d1 << "," << d2 << std::endl;
+		if (d1 < 2.0 && d2 < 2.0) {
+			line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, cross_point);
+			line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, cross_point);
+		} else {
+			Point2d mid = (p1 + p2) / 2.0;
+			line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, mid);
+			line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, mid);
+		}
+	}
+
+	return;
+}
+
+Point2d HoughTransform::getIntersection(
+		const LineSegment2D& line1, const LineSegment2D& line2) {
+	if (line1.coeffs()[1] == 0) {
+		double x = - line1.coeffs()[2] / line1.coeffs()[0];
+		double y = - (line2.coeffs()[2] + line2.coeffs()[0]*x) / line2.coeffs()[1];
+		return Point2d(x, y);
+	} else if (line2.coeffs()[1] == 0) {
+		double x = - line2.coeffs()[2] / line2.coeffs()[0];
+		double y = - (line1.coeffs()[2] + line1.coeffs()[0]*x) / line1.coeffs()[1];
+		return Point2d(x, y);
+	} else {
+		double a0 = line1.coeffs()[0];
+		double b0 = line1.coeffs()[1];
+		double c0 = line1.coeffs()[2];
+		double a1 = line2.coeffs()[0];
+		double b1 = line2.coeffs()[1];
+		double c1 = line2.coeffs()[2];
+		double D = a0*b1 - a1*b0;
+		double x = (b0*c1 - b1*c0)/D;
+		double y = (a1*c0 - a0*c1)/D;
+		return Point2d(x, y);
+	}
 }
 
 }
