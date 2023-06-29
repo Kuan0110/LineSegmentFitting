@@ -80,7 +80,7 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
 
 		performHT(cluster_cloud, line_segments);
 
-		intersectLineSegments(line_segments);
+		// intersectLineSegments(line_segments);
 
 		std::cout << "cluster ends" << std::endl;
   }
@@ -315,14 +315,14 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					if (new_distance < 0.2) {
 						line_segment.clipLineSegment(point);
 						// std::cout << "end point: " << curPoint.x << "," << curPoint.y << std::endl;
-					// }
+					}
 
 						// discard current vote cell
 						votePoint(cur_point, delta_range, min_range, false);
 						ignore_indices[point_idx.first] = true;
 						std::cout << "2 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 						removed_count++;
-					}
+					// }
 				}
 
 				if (line_segment.getSegmentLength() > 1.0) {
