@@ -80,7 +80,7 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
 
 		performHT(cluster_cloud, line_segments);
 
-		// intersectLineSegments(line_segments);
+		intersectLineSegments(line_segments);
 
 		std::cout << "cluster ends" << std::endl;
   }
@@ -90,6 +90,43 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
   //   viewer.spin();
 
 	return true;
+}
+
+void HoughTransform::printVote(const double min_range, const double delta_range, 
+		const std::vector<int>& accumulator_cell_indices) {
+  LineCoefficients coeffs;
+	auto compare = [&accumulator_cell_indices](int i, int j) {
+		return accumulator_cell_indices[i] > accumulator_cell_indices[j];
+	};
+
+	std::vector<int> indices(accumulator_cell_indices.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	std::sort(indices.begin(), indices.end(), compare);
+
+	for (int i = 200; i < 300; ++i) {
+		// convert line coefficient from hough space to cartesian space
+		int cur_vote_index = indices[i];
+		std::cout << "num vote: " << accumulator_cell_indices[cur_vote_index] << std::endl;
+
+		int y = cur_vote_index / theta_num_;
+		double range = min_range + y * delta_range; 
+
+		int x = cur_vote_index % theta_num_;
+		double theta = ((double)x / 2 + THETA_BOTTOM) / 180.0 * PI;
+
+		if (std::abs(theta) < 0.02) {
+			coeffs[0] = 1;
+			coeffs[1] = 0;
+			coeffs[2] = -range;
+		} else {
+			coeffs[0] = cos(theta) / sin(theta);
+			coeffs[1] = 1;
+			coeffs[2] = - range / sin(theta);
+		}
+
+		std::cout << "print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
+		std::cout << "" << std::endl;
+	}
 }
 
 void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result) {
@@ -113,6 +150,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			accumulator_cell_indices.emplace_back(i);
 		}
 	}
+
+	// printVote(min_range, delta_range, accumulator_);
 
 	LineCoefficients coeffs;
 	std::size_t remain_points = cloud->size();
@@ -176,10 +215,9 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				ignore_indices[point_idx.first] = true;
 				std::cout << "1 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 			}
-			std::cout << "line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
-						<< line_segment.endpoints()[1].x() << "," << line_segment.endpoints()[1].y() << std::endl;
 			if (line_segment.getSegmentLength() > 1) {
-				// checkLineSegments(line_segment, result); 
+				std::cout << "find line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
+							<< line_segment.endpoints()[1].x() << "," << line_segment.endpoints()[1].y() << std::endl;
 				result.emplace_back(std::move(line_segment));
 			}
 			
@@ -189,16 +227,13 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			for (int i = 0; i < cluster_to_remove.size(); i++) {
 				int num_points = cluster_to_remove[i].size();
 
-				if (num_points < 15) {
-					std::cout << "cluster point num: " << num_points << std::endl;
+				if (num_points < 8) {
 					for (auto index : cluster_to_remove[i]) {
-						// const auto& cur_point = cloud->points[points_to_remove[index].first];
-						// discard current vote cell
-						deductVote(cur_vote_index_);
-						// ignore_indices[point_idx.first] = true;
-						// removed_count++;						
+						if (points_to_remove[index].second < 0.2) {
+							const auto& cur_point = cloud->points[points_to_remove[index].first];
+							votePoint(cur_point, delta_range, min_range, false);
+						}				
 					}
-					// remain_points -= removed_count;
 					continue;
 				}
 
@@ -221,7 +256,6 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				// for (int i = 0; i < point_matrix.rows(); ++i) {
 				// 	std::cout << "matrix point: " << point_matrix(i,0) << "," << point_matrix(i,1) << std::endl;
 				// }
-				std::cout << "distributed refine" << std::endl;
 				LineSegment2D line_segment(candi_segment);
 				if (!line_segment.PCALineFit(point_matrix)) 
 					continue;
@@ -234,11 +268,10 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					std::cout << "angle diff: " << std::abs(angle_candi-angle_new) / PI * 180.0 << std::endl;
 					if (std::abs(angle_candi-angle_new) > 0.03492) {
 						for (auto index : cluster_to_remove[i]) {
-						// const auto& cur_point = cloud->points[points_to_remove[index].first];
-						// discard current vote cell
-						deductVote(cur_vote_index_);
-						// ignore_indices[point_idx.first] = true;
-						// removed_count++;						
+							if (points_to_remove[index].second < 0.2) {
+								const auto& cur_point = cloud->points[points_to_remove[index].first];
+								votePoint(cur_point, delta_range, min_range, false);
+							}					
 						}
 						continue;
 					}
@@ -247,11 +280,10 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					std::cout << "angle diff: " << std::abs(PI/2-angle_new) / PI * 180.0 << std::endl;
 					if (std::abs(PI/2-angle_new) > 0.03492) {
 						for (auto index : cluster_to_remove[i]) {
-						// const auto& cur_point = cloud->points[points_to_remove[index].first];
-						// discard current vote cell
-						deductVote(cur_vote_index_);
-						// ignore_indices[point_idx.first] = true;
-						// removed_count++;						
+							if (points_to_remove[index].second < 0.2) {
+								const auto& cur_point = cloud->points[points_to_remove[index].first];
+								votePoint(cur_point, delta_range, min_range, false);
+							}					
 						}
 						continue;
 					}
@@ -260,16 +292,15 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					std::cout << "angle diff: " << std::abs(PI/2-angle_candi) / PI * 180.0 << std::endl;
 					if (std::abs(PI/2-angle_candi) > 0.03492) {
 						for (auto index : cluster_to_remove[i]) {
-						// const auto& cur_point = cloud->points[points_to_remove[index].first];
-						// discard current vote cell
-						deductVote(cur_vote_index_);
-						// ignore_indices[point_idx.first] = true;
-						// removed_count++;						
+							if (points_to_remove[index].second < 0.2) {
+								const auto& cur_point = cloud->points[points_to_remove[index].first];
+								votePoint(cur_point, delta_range, min_range, false);
+							}				
 						}
 						continue;
 					}				
 				}
-				std::cout << "distributed cut" << std::endl;
+
 				for (int j = 0; j < num_points; ++j) {
 					const auto& point_idx = points_to_remove[cluster_to_remove[i][j]];
 					const auto& cur_point = cloud->points[point_idx.first];
@@ -295,7 +326,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				}
 
 				if (line_segment.getSegmentLength() > 1.0) {
-					std::cout << "line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
+					std::cout << "find line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
                 << line_segment.endpoints()[1].x() << "," << line_segment.endpoints()[1].y() << std::endl;
 					result.emplace_back(std::move(line_segment));
 				}
@@ -360,8 +391,8 @@ int HoughTransform::getLine(LineCoefficients& coeffs,
 		coeffs[2] = - range / sin(theta);
 	}
 
-	// std::cout << "canditate line: " << coeffs[0] << " " << coeffs[1] << " " << coeffs[2] << ", num vote: " << num_vote << std::endl;
-	// std::cout << "" << std::endl;
+	std::cout << "candidate line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << ",num vote: " << num_vote << std::endl;
+	std::cout << "" << std::endl;
 
 	return num_vote;
 }
@@ -441,7 +472,7 @@ void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
 		}
 	}
 
-	std::cout << "dist matrix:\n" << dis_matrix << std::endl;
+	// std::cout << "dist matrix:\n" << dis_matrix << std::endl;
 
 	std::vector<std::pair<int, int>> closed_pairs;
 	for (int i = 0; i < dis_matrix.rows(); ++i) {
@@ -452,16 +483,16 @@ void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
 	}
 
 	for (int i = 0; i < closed_pairs.size(); ++i) {
-		std::cout << "pair index: " << closed_pairs[i].first << "," << closed_pairs[i].second << std::endl;
+		// std::cout << "pair index: " << closed_pairs[i].first << "," << closed_pairs[i].second << std::endl;
 		Point2d cross_point = getIntersection(
 			line_segments[closed_pairs[i].first/2], line_segments[closed_pairs[i].second/2]);
-		std::cout << "cross point: " << cross_point.x() << "," << cross_point.y() << std::endl;
+		// std::cout << "cross point: " << cross_point.x() << "," << cross_point.y() << std::endl;
 		
 		Point2d p1 = line_segments[closed_pairs[i].first/2].endpoints()[closed_pairs[i].first%2];
 		Point2d p2 = line_segments[closed_pairs[i].second/2].endpoints()[closed_pairs[i].second%2];
 		double d1 = calcDist(cross_point, p1);
 		double d2 = calcDist(cross_point, p2);
-		std::cout << "distance: " << d1 << "," << d2 << std::endl;
+		// std::cout << "distance: " << d1 << "," << d2 << std::endl;
 		if (d1 < 2.0 && d2 < 2.0) {
 			line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, cross_point);
 			line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, cross_point);

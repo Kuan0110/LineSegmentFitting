@@ -35,6 +35,9 @@ class HoughTransform {
  private:
 	void performHT(const PointCloudPtr& cloud, LineSegments& result);
 
+	void printVote(const double min_range, const double delta_range, 
+		const std::vector<int>& accumulator_cell_indices);
+
 	void intersectLineSegments(LineSegments& line_segments);
 
 	void votePoint(const Point& point, 

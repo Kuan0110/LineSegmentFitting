@@ -27,6 +27,7 @@ def getLine(filename):
     b_y = []
     c_x = []
     c_y = []
+    d = []
 
     for line in file:
         if (line.find('line function') != -1):
@@ -43,15 +44,19 @@ def getLine(filename):
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
             c_y.append(float(num_list[1]))
+        elif (line.find('candisdate line') != -1):
+            line_list = line.split(':')
+            num_list = line_list[1].split(',')
+            d.append([float(num_list[0]),float(num_list[1]), float(num_list[2])])
 
-    return a, [b_x, b_y], [c_x, c_y]
+    return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/kuan/Hozon/LineSegmentFitting/data/merged_cloud2.asc'
-    filename2 = '/home/kuan/Hozon/LineSegmentFitting/build/a.txt'
+    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud7.asc'
+    filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
-    a, b, c = getLine(filename2)
-    m = [-0.0802381,0.996776,-87.2801]
+    a, b, c, d = getLine(filename2)
+    k = [0.0261859,1,32.1193]
     n = [0.401378,0.915913,1.29134]
     
     plt.plot(x1, y1, 'co', label='point cloud', markersize=1)
@@ -64,7 +69,14 @@ if __name__ == '__main__':
     for i in range(len(a)):
         plt.plot([a[i][0],a[i][2]], [a[i][1],a[i][3]], color = 'r', label='fitted lines')
 
-    # plt.plot([30,(-m[0]*30-m[2])/m[1]], [45,(-m[0]*45+m[2])/m[1]], color = 'r', label='fitted lines')
+    for i in range(len(d)):
+        m = d[i]
+        if m[1] == 0:
+            plt.plot([-m[2]/m[0],-m[2]/m[0]], [-30,30], color = 'r', label='candidate lines')
+        else:
+            plt.plot([-30,30], [(-m[0]*(-30)-m[2])/m[1],(-m[0]*30-m[2])/m[1]], color = 'r', label='candidate lines')
+
+    # plt.plot([-30,30], [(-k[0]*(-30)-k[2])/k[1],(-k[0]*30-k[2])/k[1]], color = 'r', label='fitted lines')
     # plt.plot([30,(-n[0]*30-n[2])/n[1]], [45,(-n[0]*45+n[2])/n[1]], color = 'r', label='fitted lines')
     
     plt.xlim(-100,300)
