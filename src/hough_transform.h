@@ -43,9 +43,15 @@ class HoughTransform {
 	void votePoint(const Point& point, 
 			const double delta_range, const double min_range, bool to_add);
 
-	int getLine(LineCoefficients& coeffs, 
-			const double min_range, const double delta_range,
-			const std::vector<std::size_t>& accumulator_cell_indices);
+	int getLines(
+		std::vector<LineCoefficients>& candi_hough_lines, 
+		const double min_range, const double delta_range, 
+		const std::vector<std::size_t>& accumulator_cell_indices);
+
+	LineCoefficients findBestHoughLine(
+		const PointCloudPtr& cloud,
+		std::vector<LineCoefficients> hough_lines, 
+		const std::vector<char>& ignore_indices);
 
 	SegmentClusters seperateDistributedPoints(const PointCloudPtr& points, 
 			const NeighborIndices& point_indices);

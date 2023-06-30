@@ -44,7 +44,7 @@ def getLine(filename):
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
             c_y.append(float(num_list[1]))
-        elif (line.find('candisdate line') != -1):
+        elif (line.find('prin1t line') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             d.append([float(num_list[0]),float(num_list[1]), float(num_list[2])])
@@ -52,7 +52,7 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud7.asc'
+    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud_p2_1.asc'
     filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c, d = getLine(filename2)
@@ -71,10 +71,12 @@ if __name__ == '__main__':
 
     for i in range(len(d)):
         m = d[i]
+        print(m)
         if m[1] == 0:
             plt.plot([-m[2]/m[0],-m[2]/m[0]], [-30,30], color = 'r', label='candidate lines')
         else:
-            plt.plot([-30,30], [(-m[0]*(-30)-m[2])/m[1],(-m[0]*30-m[2])/m[1]], color = 'r', label='candidate lines')
+            x = [165,170]
+            plt.plot([x[0],x[1]], [(-m[0]*(x[0])-m[2])/m[1],(-m[0]*x[1]-m[2])/m[1]], color = 'r', label='candidate lines')
 
     # plt.plot([-30,30], [(-k[0]*(-30)-k[2])/k[1],(-k[0]*30-k[2])/k[1]], color = 'r', label='fitted lines')
     # plt.plot([30,(-n[0]*30-n[2])/n[1]], [45,(-n[0]*45+n[2])/n[1]], color = 'r', label='fitted lines')

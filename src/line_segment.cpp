@@ -2,11 +2,13 @@
 
 namespace line_fitting {
 
-LineSegment2D::LineSegment2D()
-  : cloud_(nullptr)
-	, coeffs_({0.0, 0.0, 0.0})
+LineSegment2D::LineSegment2D(
+	const PointCloudPtr& cloud, 
+	const std::vector<Point2d>& range)
+	: cloud_(cloud)
+	, coeffs_({0.0,0.0,0.0})
+	, endpoints_(range) 
 	, raw_points_()
-	, endpoints_({Point2d(0.0,0.0), Point2d(0.0,0.0)})
 {
 }
 
@@ -90,8 +92,7 @@ bool LineSegment2D::refine(const double distance_Thresh, const std::vector<char>
 		point_matrix.row(count++) << cur_point.x, cur_point.y;
 	}
 
-	if (!PCALineFit(point_matrix))
-		return false;
+	fitLineTLS(point_matrix);
 
 	std::cout << "refined line: " << coeffs_[0] << "," << coeffs_[1] << "," << coeffs_[2] << std::endl;
 	std::cout << "" << std::endl;
