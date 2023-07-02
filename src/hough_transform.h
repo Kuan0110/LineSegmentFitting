@@ -1,6 +1,5 @@
 #pragma once 
 
-#include <unordered_map>
 #include <pcl/search/impl/kdtree.hpp>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -59,8 +58,6 @@ class HoughTransform {
 	Point2d getIntersection(
 			const LineSegment2D& line1, const LineSegment2D& line2);
 
-	void addLineSegment(const LineSegment2D& new_line, LineSegments& lines);
-
 	double inline calcNorm(const Point& point) const {
 		return std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
 	}
@@ -68,8 +65,6 @@ class HoughTransform {
 	double inline calcDist(const Point2d& p1, const Point2d& p2) const {
 		return std::sqrt(std::pow(p1.x() - p2.x(), 2) + std::pow(p1.y() - p2.y(), 2));
 	}
-
-	void inline deductVote(const int index) {accumulator_[index]--;}
 
 	void inline removeVote(const int index) {accumulator_[index] = 0;}
 

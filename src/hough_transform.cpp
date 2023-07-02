@@ -92,43 +92,6 @@ bool HoughTransform::run(const PointCloudPtr& cloud, LineSegments& line_segments
 	return true;
 }
 
-void HoughTransform::printVote(const double min_range, const double delta_range, 
-		const std::vector<int>& accumulator_cell_indices) {
-  LineCoefficients coeffs;
-	auto compare = [&accumulator_cell_indices](int i, int j) {
-		return accumulator_cell_indices[i] > accumulator_cell_indices[j];
-	};
-
-	std::vector<int> indices(accumulator_cell_indices.size());
-	std::iota(indices.begin(), indices.end(), 0);
-	std::sort(indices.begin(), indices.end(), compare);
-
-	for (int i = 0; i < 4; ++i) {
-		// convert line coefficient from hough space to cartesian space
-		int cur_vote_index = indices[i];
-		std::cout << "num vote: " << accumulator_cell_indices[cur_vote_index] << std::endl;
-
-		int y = cur_vote_index / theta_num_;
-		double range = min_range + y * delta_range; 
-
-		int x = cur_vote_index % theta_num_;
-		double theta = ((double)x / 2 + THETA_BOTTOM) / 180.0 * PI;
-
-		if (std::abs(theta) < 0.02) {
-			coeffs[0] = 1;
-			coeffs[1] = 0;
-			coeffs[2] = -range;
-		} else {
-			coeffs[0] = cos(theta) / sin(theta);
-			coeffs[1] = 1;
-			coeffs[2] = - range / sin(theta);
-		}
-
-		std::cout << "1 print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
-		std::cout << "" << std::endl;
-	}
-}
-
 void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result) {
 	// find bounding box of point cloud
 	Point max_bound, min_bound;
@@ -358,6 +321,69 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 	return;
 }
 
+void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
+	int num_endpoint = 2*line_segments.size();
+	Eigen::MatrixXd dis_matrix = 
+		Eigen::MatrixXd::Constant(num_endpoint, num_endpoint, 100.0);
+
+	for (size_t j = 0; j < line_segments.size(); j++) {
+		std::vector<Point2d> endpoints = line_segments[j].endpoints();
+		for (size_t k = j + 1; k < line_segments.size(); k++) {
+			std::vector<Point2d> candi_endpoints = line_segments[k].endpoints();
+			double dist1 = calcDist(candi_endpoints[0], endpoints[0]);
+			double dist2 = calcDist(candi_endpoints[1], endpoints[0]);
+			dis_matrix(2*j,2*k) = dist1;
+			dis_matrix(2*j,2*k+1) = dist2;
+
+			double dist3 = calcDist(candi_endpoints[0], endpoints[1]);
+			double dist4 = calcDist(candi_endpoints[1], endpoints[1]);
+			dis_matrix(2*j+1,2*k) = dist3;
+			dis_matrix(2*j+1,2*k+1) = dist4;			
+		}
+	}
+
+	// std::cout << "dist matrix:\n" << dis_matrix << std::endl;
+	std::vector<double> distances;
+	std::vector<std::pair<int, int>> closed_pairs;
+	for (int i = 0; i < dis_matrix.rows(); ++i) {
+		Eigen::VectorXd::Index min_row;
+		double min_val = dis_matrix.row(i).minCoeff(&min_row);
+		if (min_val > 2.0) continue;
+		closed_pairs.push_back(std::make_pair(i, min_row));
+		distances.push_back(min_val);
+	}
+
+	for (int i = 0; i < closed_pairs.size(); ++i) {
+		// std::cout << "pair index: " << closed_pairs[i].first << "," << closed_pairs[i].second << std::endl;
+		Point2d cross_point = getIntersection(
+			line_segments[closed_pairs[i].first/2], line_segments[closed_pairs[i].second/2]);
+		// std::cout << "cross point: " << cross_point.x() << "," << cross_point.y() << std::endl;
+		
+		Point2d p1 = line_segments[closed_pairs[i].first/2].endpoints()[closed_pairs[i].first%2];
+		Point2d p2 = line_segments[closed_pairs[i].second/2].endpoints()[closed_pairs[i].second%2];
+		double d1 = calcDist(cross_point, p1);
+		double d2 = calcDist(cross_point, p2);
+		// std::cout << "distance: " << d1 << "," << d2 << std::endl;
+		if (d1 < 2.0 && d2 < 2.0) {
+			if (distances[i] < 1.0) {
+				line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, cross_point);
+				line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, cross_point);
+			} else {
+				PointCloudPtr cloud(new pcl::PointCloud<Point>);
+				std::vector<Point2d> range = {p1, p2};
+				LineSegment2D new_line_segment(cloud, range);
+				line_segments.push_back(std::move(new_line_segment));
+			}
+		} else {
+			Point2d mid = (p1 + p2) / 2.0;
+			line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, mid);
+			line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, mid);
+		}
+	}
+
+	return;
+}
+
 void HoughTransform::votePoint(const Point& point, const double delta_range, const double min_range, bool to_add) {
 	// vote the range frequency of each point in all theta
 	for(int k = 0; k < theta_num_; k++) {
@@ -370,6 +396,43 @@ void HoughTransform::votePoint(const Point& point, const double delta_range, con
 	}
 
 	return;
+}
+
+void HoughTransform::printVote(const double min_range, const double delta_range, 
+		const std::vector<int>& accumulator_cell_indices) {
+  LineCoefficients coeffs;
+	auto compare = [&accumulator_cell_indices](int i, int j) {
+		return accumulator_cell_indices[i] > accumulator_cell_indices[j];
+	};
+
+	std::vector<int> indices(accumulator_cell_indices.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	std::sort(indices.begin(), indices.end(), compare);
+
+	for (int i = 0; i < 4; ++i) {
+		// convert line coefficient from hough space to cartesian space
+		int cur_vote_index = indices[i];
+		std::cout << "num vote: " << accumulator_cell_indices[cur_vote_index] << std::endl;
+
+		int y = cur_vote_index / theta_num_;
+		double range = min_range + y * delta_range; 
+
+		int x = cur_vote_index % theta_num_;
+		double theta = ((double)x / 2 + THETA_BOTTOM) / 180.0 * PI;
+
+		if (std::abs(theta) < 0.02) {
+			coeffs[0] = 1;
+			coeffs[1] = 0;
+			coeffs[2] = -range;
+		} else {
+			coeffs[0] = cos(theta) / sin(theta);
+			coeffs[1] = 1;
+			coeffs[2] = - range / sin(theta);
+		}
+
+		std::cout << "1 print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
+		std::cout << "" << std::endl;
+	}
 }
 
 int HoughTransform::getLines(
@@ -471,86 +534,6 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
 
 	std::cout << "line segment cluster number: " << point_clusters.size() << std::endl;
 	return std::move(point_clusters);
-}
-
-void HoughTransform::addLineSegment(const LineSegment2D& new_line, LineSegments& lines) {
-	// for (auto& line : lines) {
-	// 	Point2d point1, point2;
-	// 	point1 << new_line.endpoints()[0], new_line.endpoints()[1];
-	// 	point2 << new_line.endpoints()[2], new_line.endpoints()[3];
-
-	// 	double distance1 = getDistancePoint2Line(point1, line.coeffs());
-	// 	double distance2 = getDistancePoint2Line(point2, line.coeffs());
-
-	// 	if (distance1 < 0.8 && distance2 < 0.8 && std::abs(distance1 - distance2) < 0.3) {
-	// 		Eigen::MatrixXd point_matrix(new_line.inliers().size() + line.inliers().size(), 2);
-
-	// 		for ()
-	// 	}
-	// }
-}
-
-void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
-	int num_endpoint = 2*line_segments.size();
-	Eigen::MatrixXd dis_matrix = 
-		Eigen::MatrixXd::Constant(num_endpoint, num_endpoint, 100.0);
-
-	for (size_t j = 0; j < line_segments.size(); j++) {
-		std::vector<Point2d> endpoints = line_segments[j].endpoints();
-		for (size_t k = j + 1; k < line_segments.size(); k++) {
-			std::vector<Point2d> candi_endpoints = line_segments[k].endpoints();
-			double dist1 = calcDist(candi_endpoints[0], endpoints[0]);
-			double dist2 = calcDist(candi_endpoints[1], endpoints[0]);
-			dis_matrix(2*j,2*k) = dist1;
-			dis_matrix(2*j,2*k+1) = dist2;
-
-			double dist3 = calcDist(candi_endpoints[0], endpoints[1]);
-			double dist4 = calcDist(candi_endpoints[1], endpoints[1]);
-			dis_matrix(2*j+1,2*k) = dist3;
-			dis_matrix(2*j+1,2*k+1) = dist4;			
-		}
-	}
-
-	// std::cout << "dist matrix:\n" << dis_matrix << std::endl;
-	std::vector<double> distances;
-	std::vector<std::pair<int, int>> closed_pairs;
-	for (int i = 0; i < dis_matrix.rows(); ++i) {
-		Eigen::VectorXd::Index min_row;
-		double min_val = dis_matrix.row(i).minCoeff(&min_row);
-		if (min_val > 2.0) continue;
-		closed_pairs.push_back(std::make_pair(i, min_row));
-		distances.push_back(min_val);
-	}
-
-	for (int i = 0; i < closed_pairs.size(); ++i) {
-		// std::cout << "pair index: " << closed_pairs[i].first << "," << closed_pairs[i].second << std::endl;
-		Point2d cross_point = getIntersection(
-			line_segments[closed_pairs[i].first/2], line_segments[closed_pairs[i].second/2]);
-		// std::cout << "cross point: " << cross_point.x() << "," << cross_point.y() << std::endl;
-		
-		Point2d p1 = line_segments[closed_pairs[i].first/2].endpoints()[closed_pairs[i].first%2];
-		Point2d p2 = line_segments[closed_pairs[i].second/2].endpoints()[closed_pairs[i].second%2];
-		double d1 = calcDist(cross_point, p1);
-		double d2 = calcDist(cross_point, p2);
-		// std::cout << "distance: " << d1 << "," << d2 << std::endl;
-		if (d1 < 2.0 && d2 < 2.0) {
-			if (distances[i] < 1.0) {
-				line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, cross_point);
-				line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, cross_point);
-			} else {
-				PointCloudPtr cloud(new pcl::PointCloud<Point>);
-				std::vector<Point2d> range = {p1, p2};
-				LineSegment2D new_line_segment(cloud, range);
-				line_segments.push_back(std::move(new_line_segment));
-			}
-		} else {
-			Point2d mid = (p1 + p2) / 2.0;
-			line_segments[closed_pairs[i].first/2].setEndpoints(closed_pairs[i].first%2, mid);
-			line_segments[closed_pairs[i].second/2].setEndpoints(closed_pairs[i].second%2, mid);
-		}
-	}
-
-	return;
 }
 
 Point2d HoughTransform::getIntersection(
