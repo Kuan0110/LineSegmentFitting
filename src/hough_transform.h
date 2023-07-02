@@ -76,12 +76,12 @@ class HoughTransform {
  private:
 	std::vector<Vertex> circle_; // [cos theta, sin theta]
 	std::vector<int> accumulator_;
+	std::vector<int> top_vote_indices_;
 
 	int rho_num_;
 	int theta_num_;
 	int peak_num_;
 	int min_num_vote_;
-	int cur_vote_index_;
 	double distance_thresh_;
 };
 

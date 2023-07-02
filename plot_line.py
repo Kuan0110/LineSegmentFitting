@@ -39,12 +39,12 @@ def getLine(filename):
             num_list = line_list[1].split(',')
             b_x.append(float(num_list[0]))
             b_y.append(float(num_list[1]))
-        elif (line.find('distributed point') != -1):
+        elif (line.find('delete point') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
             c_y.append(float(num_list[1]))
-        elif (line.find('prin1t line') != -1):
+        elif (line.find('print1 line') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             d.append([float(num_list[0]),float(num_list[1]), float(num_list[2])])
@@ -52,8 +52,8 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud_p2_1.asc'
-    filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
+    filename1 = '/home/kuan/Hozon/LineSegmentFitting/data/merged_cloud4.asc'
+    filename2 = '/home/kuan/Hozon/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c, d = getLine(filename2)
     k = [0.0261859,1,32.1193]
@@ -62,9 +62,9 @@ if __name__ == '__main__':
     plt.plot(x1, y1, 'co', label='point cloud', markersize=1)
     
     # for i in range(len(c)):
-    #     plt.plot(c[0], c[1], 'mo', label='distributed points', markersize=1)
-    for i in range(len(b)):
-        plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
+    #     plt.plot(c[0], c[1], 'ko', label='delete points', markersize=1)
+    # for i in range(len(b)):
+    #     plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
 
     for i in range(len(a)):
         plt.plot([a[i][0],a[i][2]], [a[i][1],a[i][3]], color = 'r', label='fitted lines')
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         if m[1] == 0:
             plt.plot([-m[2]/m[0],-m[2]/m[0]], [-30,30], color = 'r', label='candidate lines')
         else:
-            x = [165,170]
+            x = [10,30]
             plt.plot([x[0],x[1]], [(-m[0]*(x[0])-m[2])/m[1],(-m[0]*x[1]-m[2])/m[1]], color = 'r', label='candidate lines')
 
     # plt.plot([-30,30], [(-k[0]*(-30)-k[2])/k[1],(-k[0]*30-k[2])/k[1]], color = 'r', label='fitted lines')

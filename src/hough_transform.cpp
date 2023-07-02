@@ -156,6 +156,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 	std::size_t remain_points = cloud->size();
 	std::vector<char> ignore_indices(cloud->size(), false);
 	while (remain_points >= min_num_vote_) {
+		top_vote_indices_.clear();
 		// get candidate line has top number of votes 
 		std::vector<LineCoefficients> candi_coeffs;
 		std::size_t num_votes = getLines(candi_coeffs, min_range, 
@@ -175,7 +176,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			 Point2d(min_bound.x, min_bound.y)});
 		if (!candi_segment.refine(distance_thresh_, ignore_indices)) {
 			std::cout << "refine failed" << std::endl;
-			removeVote(cur_vote_index_);
+			for (const int idx : top_vote_indices_) 
+				removeVote(idx);
 			continue;
 		}
 
@@ -188,6 +190,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 		SegmentClusters cluster_to_remove =
 			seperateDistributedPoints(cloud, points_to_remove);
 
+		std::cout << "print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
+
 		if (cluster_to_remove.size() == 0) {
 			for (const auto& point_idx : points_to_remove) {
 				const auto& cur_point = cloud->points[point_idx.first];
@@ -198,7 +202,8 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 
 				// discard current vote cell
 				// votePoint(cur_point, delta_range, min_range, false);
-				deductVote(cur_vote_index_);
+				for (const int idx : top_vote_indices_) 
+					removeVote(idx);
 			}			
 		} else if (cluster_to_remove.size() == 1) {
 			LineSegment2D line_segment(candi_segment);
@@ -270,36 +275,45 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 					double angle_new = std::atan2(-line_segment.coeffs()[0], line_segment.coeffs()[1]);
 					std::cout << "angle diff: " << std::abs(angle_candi-angle_new) / PI * 180.0 << std::endl;
 					if (std::abs(angle_candi-angle_new) > 0.03492) {
-						for (auto index : cluster_to_remove[i]) {
-							if (points_to_remove[index].second < 0.2) {
-								const auto& cur_point = cloud->points[points_to_remove[index].first];
-								votePoint(cur_point, delta_range, min_range, false);
-							}					
-						}
+						// for (auto index : cluster_to_remove[i]) {
+						// 	if (points_to_remove[index].second < 0.2) {
+						// 		const auto& cur_point = cloud->points[points_to_remove[index].first];
+						// 		votePoint(cur_point, delta_range, min_range, false);
+						// 		std::cout << "delete points: " << cur_point.x << "," << cur_point.y << std::endl;
+						// 	}					
+						// }
+						for (const int idx : top_vote_indices_) 
+							removeVote(idx);
 						continue;
 					}
 				} else if (candi_segment.coeffs()[1] == 0) {
 					double angle_new = std::atan2(-line_segment.coeffs()[0], line_segment.coeffs()[1]);
 					std::cout << "angle diff: " << std::abs(PI/2-angle_new) / PI * 180.0 << std::endl;
 					if (std::abs(PI/2-angle_new) > 0.03492) {
-						for (auto index : cluster_to_remove[i]) {
-							if (points_to_remove[index].second < 0.2) {
-								const auto& cur_point = cloud->points[points_to_remove[index].first];
-								votePoint(cur_point, delta_range, min_range, false);
-							}					
-						}
+						// for (auto index : cluster_to_remove[i]) {
+						// 	if (points_to_remove[index].second < 0.2) {
+						// 		const auto& cur_point = cloud->points[points_to_remove[index].first];
+						// 		votePoint(cur_point, delta_range, min_range, false);
+						// 		std::cout << "delete points: " << cur_point.x << "," << cur_point.y << std::endl;
+						// 	}					
+						// }
+						for (const int idx : top_vote_indices_) 
+							removeVote(idx);
 						continue;
 					}
 				} else if (line_segment.coeffs()[1] == 0) {
 					double angle_candi = std::atan2(-candi_segment.coeffs()[0], candi_segment.coeffs()[1]);
 					std::cout << "angle diff: " << std::abs(PI/2-angle_candi) / PI * 180.0 << std::endl;
 					if (std::abs(PI/2-angle_candi) > 0.03492) {
-						for (auto index : cluster_to_remove[i]) {
-							if (points_to_remove[index].second < 0.2) {
-								const auto& cur_point = cloud->points[points_to_remove[index].first];
-								votePoint(cur_point, delta_range, min_range, false);
-							}				
-						}
+						// for (auto index : cluster_to_remove[i]) {
+						// 	if (points_to_remove[index].second < 0.2) {
+						// 		const auto& cur_point = cloud->points[points_to_remove[index].first];
+						// 		votePoint(cur_point, delta_range, min_range, false);
+						// 		std::cout << "delete points: " << cur_point.x << "," << cur_point.y << std::endl;
+						// 	}				
+						// }
+						for (const int idx : top_vote_indices_) 
+							removeVote(idx);
 						continue;
 					}				
 				}
@@ -399,6 +413,7 @@ int HoughTransform::getLines(
 		}
 
 		candi_hough_lines.push_back(std::move(candi_coeffs));
+		top_vote_indices_.push_back(cell_idx);
 	}
 
 	return num_top_vote;
