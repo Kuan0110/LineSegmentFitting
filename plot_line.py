@@ -44,7 +44,7 @@ def getLine(filename):
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
             c_y.append(float(num_list[1]))
-        elif (line.find('print1 line') != -1):
+        elif (line.find('1 print line') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             d.append([float(num_list[0]),float(num_list[1]), float(num_list[2])])
@@ -52,7 +52,7 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/kuan/Hozon/LineSegmentFitting/data/merged_cloud4.asc'
+    filename1 = '/home/kuan/Hozon/LineSegmentFitting/data/merged_cloud7.asc'
     filename2 = '/home/kuan/Hozon/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c, d = getLine(filename2)
@@ -63,8 +63,8 @@ if __name__ == '__main__':
     
     # for i in range(len(c)):
     #     plt.plot(c[0], c[1], 'ko', label='delete points', markersize=1)
-    # for i in range(len(b)):
-    #     plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
+    for i in range(len(b)):
+        plt.plot(b[0], b[1], 'mo', label='closed points', markersize=1)
 
     for i in range(len(a)):
         plt.plot([a[i][0],a[i][2]], [a[i][1],a[i][3]], color = 'r', label='fitted lines')
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         if m[1] == 0:
             plt.plot([-m[2]/m[0],-m[2]/m[0]], [-30,30], color = 'r', label='candidate lines')
         else:
-            x = [10,30]
+            x = [169,173]
             plt.plot([x[0],x[1]], [(-m[0]*(x[0])-m[2])/m[1],(-m[0]*x[1]-m[2])/m[1]], color = 'r', label='candidate lines')
 
     # plt.plot([-30,30], [(-k[0]*(-30)-k[2])/k[1],(-k[0]*30-k[2])/k[1]], color = 'r', label='fitted lines')

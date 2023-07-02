@@ -103,7 +103,7 @@ void HoughTransform::printVote(const double min_range, const double delta_range,
 	std::iota(indices.begin(), indices.end(), 0);
 	std::sort(indices.begin(), indices.end(), compare);
 
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 4; ++i) {
 		// convert line coefficient from hough space to cartesian space
 		int cur_vote_index = indices[i];
 		std::cout << "num vote: " << accumulator_cell_indices[cur_vote_index] << std::endl;
@@ -124,7 +124,7 @@ void HoughTransform::printVote(const double min_range, const double delta_range,
 			coeffs[2] = - range / sin(theta);
 		}
 
-		std::cout << "print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
+		std::cout << "1 print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
 		std::cout << "" << std::endl;
 	}
 }
@@ -151,7 +151,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 		}
 	}
 
-	// printVote(min_range, delta_range, accumulator_);
+	printVote(min_range, delta_range, accumulator_);
 
 	std::size_t remain_points = cloud->size();
 	std::vector<char> ignore_indices(cloud->size(), false);
@@ -190,7 +190,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 		SegmentClusters cluster_to_remove =
 			seperateDistributedPoints(cloud, points_to_remove);
 
-		std::cout << "print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
+		std::cout << "3 print line: " << coeffs[0] << "," << coeffs[1] << "," << coeffs[2] << std::endl;
 
 		if (cluster_to_remove.size() == 0) {
 			for (const auto& point_idx : points_to_remove) {
@@ -198,7 +198,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				
 				Point2d point;
 				point << cur_point.x, cur_point.y;
-				std::cout << "0 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
+				// std::cout << "0 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 
 				// discard current vote cell
 				// votePoint(cur_point, delta_range, min_range, false);
@@ -222,7 +222,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				// discard current vote cell
 				votePoint(cur_point, delta_range, min_range, false);
 				ignore_indices[point_idx.first] = true;
-				std::cout << "1 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
+				// std::cout << "1 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 			}
 			if (line_segment.getSegmentLength() > 1) {
 				std::cout << "find line endpoint: " << line_segment.endpoints()[0].x() << "," << line_segment.endpoints()[0].y() << "," 
@@ -337,7 +337,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 						// discard current vote cell
 						votePoint(cur_point, delta_range, min_range, false);
 						ignore_indices[point_idx.first] = true;
-						std::cout << "2 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
+						// std::cout << "2 closed points: " << cur_point.x << "," << cur_point.y << std::endl;
 						removed_count++;
 					// }
 				}
@@ -414,6 +414,8 @@ int HoughTransform::getLines(
 
 		candi_hough_lines.push_back(std::move(candi_coeffs));
 		top_vote_indices_.push_back(cell_idx);
+
+		std::cout << "2 print line: " << candi_coeffs[0] << "," << candi_coeffs[1] << "," << candi_coeffs[2] << ", num vote: " << accumulator_[cell_idx]  << std::endl;
 	}
 
 	return num_top_vote;
