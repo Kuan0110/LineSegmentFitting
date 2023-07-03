@@ -2,11 +2,13 @@
 
 namespace line_fitting {
 
-LineSegment2D::LineSegment2D()
-  : cloud_(nullptr)
-	, coeffs_({0.0, 0.0, 0.0})
+LineSegment2D::LineSegment2D(
+	const PointCloudPtr& cloud, 
+	const std::vector<Point2d>& range)
+	: cloud_(cloud)
+	, coeffs_({0.0,0.0,0.0})
+	, endpoints_(range) 
 	, raw_points_()
-	, endpoints_({Point2d(0.0,0.0), Point2d(0.0,0.0)})
 {
 }
 

@@ -24,7 +24,7 @@ class LineSegment2D {
 
 	static double getDistancePoint2Line(const Point2d& point, const LineCoefficients& coeffs);
 
-	LineSegment2D();
+	LineSegment2D(const PointCloudPtr& cloud, const std::vector<Point2d>& range);
 	
 	LineSegment2D(const PointCloudPtr& cloud, 
 		const LineCoefficients& coeffs, const std::vector<Point2d>& range);
