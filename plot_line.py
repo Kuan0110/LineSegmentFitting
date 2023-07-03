@@ -52,7 +52,7 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud_1.asc'
+    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud8.asc'
     filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c, d = getLine(filename2)

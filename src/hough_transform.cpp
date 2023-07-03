@@ -217,7 +217,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 			for (int i = 0; i < cluster_to_remove.size(); i++) {
 				std::cout << "cur " << i << ", total " << cluster_to_remove.size() << std::endl;
 				int num_points = cluster_to_remove[i].size();
-
+				std::cout << "num points: " << num_points << std::endl;
 				if (num_points < 8) {
 					if (i == cluster_to_remove.size() - 1)
 						removeVote(cur_vote_index_);
@@ -245,8 +245,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud, LineSegments& result)
 				// 	std::cout << "matrix point: " << point_matrix(i,0) << "," << point_matrix(i,1) << std::endl;
 				// }
 				LineSegment2D line_segment(candi_segment);
-				if (!line_segment.PCALineFit(point_matrix)) 
-					continue;
+				line_segment.fitLineTLS(point_matrix);
 
 				std::cout << "cluster refined line: " << line_segment.coeffs()[0] << "," << line_segment.coeffs()[1] << "," << line_segment.coeffs()[2] << std::endl;
 
