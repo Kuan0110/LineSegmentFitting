@@ -42,7 +42,7 @@ bool HoughTransform::run(const PointCloudPtr& cloud,
   tree->setInputCloud(cloud);
 
   pcl::EuclideanClusterExtraction<Point> ec;
-  ec.setClusterTolerance(0.15);
+  ec.setClusterTolerance(0.2);
   ec.setMinClusterSize(70);
   ec.setMaxClusterSize(10000);
   ec.setSearchMethod(tree);
@@ -107,7 +107,7 @@ void HoughTransform::printVote(
   std::iota(indices.begin(), indices.end(), 0);
   std::sort(indices.begin(), indices.end(), compare);
 
-  for (int i = 200; i < 300; ++i) {
+  for (int i = 400; i < 600; ++i) {
     // convert line coefficient from hough space to cartesian space
     int cur_vote_index = indices[i];
     std::cout << "num vote: " << accumulator_cell_indices[cur_vote_index]
@@ -164,6 +164,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
   std::size_t remain_points = cloud->size();
   std::vector<char> ignore_indices(cloud->size(), false);
   while (remain_points >= min_num_vote_) {
+    // printVote(min_range, delta_range, accumulator_);
     // get candidate line has top number of votes
     std::size_t num_votes =
         getLine(coeffs, min_range, delta_range, accumulator_cell_indices);
@@ -218,7 +219,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
                   << "," << line_segment.endpoints()[0].y() << ","
                   << line_segment.endpoints()[1].x() << ","
                   << line_segment.endpoints()[1].y() << std::endl;
-        if (!isOverlapping(line_segment, result))
+        // if (!isOverlapping(line_segment, result))
           result.emplace_back(std::move(line_segment));
       }
 
@@ -243,7 +244,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
         int count = 0;
         int removed_count = 0;
         for (auto index : cluster_to_remove[i]) {
-          if (points_to_remove[index].second < 0.2) {
+          if (points_to_remove[index].second < 0.5) {
             const auto& cur_point =
                 cloud->points[points_to_remove[index].first];
             point_matrix(count, 0) = cur_point.x;
@@ -328,7 +329,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
                     << "," << line_segment.endpoints()[0].y() << ","
                     << line_segment.endpoints()[1].x() << ","
                     << line_segment.endpoints()[1].y() << std::endl;
-          if (!isOverlapping(line_segment))
+          // if (!isOverlapping(line_segment))
             result.emplace_back(std::move(line_segment));
         }
 
@@ -438,25 +439,6 @@ SegmentClusters HoughTransform::seperateDistributedPoints(
   return std::move(point_clusters);
 }
 
-void HoughTransform::addLineSegment(const LineSegment2D& new_line,
-                                    LineSegments& lines) {
-  // for (auto& line : lines) {
-  // 	Point2d point1, point2;
-  // 	point1 << new_line.endpoints()[0], new_line.endpoints()[1];
-  // 	point2 << new_line.endpoints()[2], new_line.endpoints()[3];
-
-  // 	double distance1 = getDistancePoint2Line(point1, line.coeffs());
-  // 	double distance2 = getDistancePoint2Line(point2, line.coeffs());
-
-  // 	if (distance1 < 0.8 && distance2 < 0.8 && std::abs(distance1 -
-  // distance2) < 0.3) { 		Eigen::MatrixXd point_matrix(new_line.inliers().size()
-  // + line.inliers().size(), 2);
-
-  // 		for ()
-  // 	}
-  // }
-}
-
 void HoughTransform::intersectLineSegments(LineSegments& line_segments) {
   int num_endpoint = 2 * line_segments.size();
   Eigen::MatrixXd dis_matrix =
@@ -550,9 +532,9 @@ Point2d HoughTransform::getIntersection(const LineSegment2D& line1,
   }
 }
 
-bool HoughTransform::isOverlapping(const LineSegment2D& line_segment,
-										const LineSegments& result) {
+// bool HoughTransform::isOverlapping(const LineSegment2D& line_segment,
+// 										const LineSegments& result) {
 	
-}
+// }
 
 }  // namespace line_fitting

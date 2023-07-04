@@ -44,7 +44,7 @@ def getLine(filename):
             num_list = line_list[1].split(',')
             c_x.append(float(num_list[0]))
             c_y.append(float(num_list[1]))
-        elif (line.find('refined1 line') != -1):
+        elif (line.find('print line') != -1):
             line_list = line.split(':')
             num_list = line_list[1].split(',')
             d.append([float(num_list[0]),float(num_list[1]), float(num_list[2])])
@@ -52,8 +52,8 @@ def getLine(filename):
     return a, [b_x, b_y], [c_x, c_y], d
 
 if __name__ == '__main__':
-    filename1 = '/home/dell/slam/LineSegmentFitting/data/merged_cloud10.asc'
-    filename2 = '/home/dell/slam/LineSegmentFitting/build/a.txt'
+    filename1 = '/home/kuan/LineSegmentFitting/data/merged_cloud11.asc'
+    filename2 = '/home/kuan/LineSegmentFitting/build/a.txt'
     x1, y1 = getPointCloud(filename1)
     a, b, c, d = getLine(filename2)
     k = [0.0261859,1,32.1193]

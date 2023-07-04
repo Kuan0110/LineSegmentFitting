@@ -164,7 +164,7 @@ void LineSegment2D::clipLineSegment(const Point2d& point) {
   return;
 }
 
-Point2d getProjection(const Point2d& point) {
+Point2d LineSegment2D::getProjection(const Point2d& point) {
 	Point2d proj_point;
   if (coeffs_[1] != 0.0) {
     double proj_y = (point[0] * coeffs_[0] + coeffs_[2]) / -coeffs_[1];
