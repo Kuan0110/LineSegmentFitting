@@ -1,11 +1,11 @@
-#include <iostream>
-#include <chrono>
-
-#include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/io/pcd_io.h>
 
-#include "line_segment.h"
+#include <chrono>
+#include <iostream>
+
 #include "hough_transform.h"
+#include "line_segment.h"
 
 int main(int argc, char* argv[]) {
   const std::string pclFilePath = argv[1];
@@ -15,23 +15,25 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  std::cout << "Number of original cloud: " << cloud->points.size() << std::endl;
+  std::cout << "Number of original cloud: " << cloud->points.size()
+            << std::endl;
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  line_fitting::HoughTransform transformer(5,500,0.5);
+  line_fitting::HoughTransform transformer(5, 500, 0.5);
 
   line_fitting::LineSegments line_segments;
   if (transformer.run(cloud, line_segments)) {
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     double time = duration.count();
     std::cout << "Line fitting time: " << time << " ms" << std::endl;
     std::cout << "" << std::endl;
     for (const auto& line : line_segments)
-      std::cout << "line function: " 
-                << line.endpoints()[0].x() << "," << line.endpoints()[0].y() << "," 
-                << line.endpoints()[1].x() << "," << line.endpoints()[1].y() << std::endl;
+      std::cout << "line function: " << line.endpoints()[0].x() << ","
+                << line.endpoints()[0].y() << "," << line.endpoints()[1].x()
+                << "," << line.endpoints()[1].y() << std::endl;
   } else {
     std::cerr << "Failed to run hough transform" << std::endl;
     return EXIT_FAILURE;
@@ -39,5 +41,3 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-
-
