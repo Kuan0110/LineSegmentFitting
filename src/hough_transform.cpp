@@ -532,9 +532,11 @@ Point2d HoughTransform::getIntersection(const LineSegment2D& line1,
   }
 }
 
-// bool HoughTransform::isOverlapping(const LineSegment2D& line_segment,
-// 										const LineSegments& result) {
-	
-// }
+bool HoughTransform::isOverlapping(const LineSegment2D& line_segment,
+										const LineSegments& result) {
+	for (const auto& group_line_segment : result) {
+    Point2d point1 = 
+  }
+}
 
 }  // namespace line_fitting
