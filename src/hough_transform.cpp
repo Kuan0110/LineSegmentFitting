@@ -83,7 +83,7 @@ bool HoughTransform::run(const PointCloudPtr& cloud,
 
     performHT(cluster_cloud, line_segments);
 
-    intersectLineSegments(line_segments);
+    // intersectLineSegments(line_segments);
 
     std::cout << "cluster ends" << std::endl;
   }
@@ -219,7 +219,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
                   << "," << line_segment.endpoints()[0].y() << ","
                   << line_segment.endpoints()[1].x() << ","
                   << line_segment.endpoints()[1].y() << std::endl;
-        // if (!isOverlapping(line_segment, result))
+        if (!isOverlapping(line_segment, result))
           result.emplace_back(std::move(line_segment));
       }
 
@@ -329,7 +329,7 @@ void HoughTransform::performHT(const PointCloudPtr& cloud,
                     << "," << line_segment.endpoints()[0].y() << ","
                     << line_segment.endpoints()[1].x() << ","
                     << line_segment.endpoints()[1].y() << std::endl;
-          // if (!isOverlapping(line_segment))
+          if (!isOverlapping(line_segment, result))
             result.emplace_back(std::move(line_segment));
         }
 
@@ -533,10 +533,26 @@ Point2d HoughTransform::getIntersection(const LineSegment2D& line1,
 }
 
 bool HoughTransform::isOverlapping(const LineSegment2D& line_segment,
-										const LineSegments& result) {
-	for (const auto& group_line_segment : result) {
-    Point2d point1 = 
+                                   const LineSegments& result) {
+  for (const auto& group_ls : result) {
+    Point2d point1 = line_segment.endpoints()[0];
+    Point2d point2 = line_segment.endpoints()[1];
+
+    double dist1, dist2;
+    dist1 = group_ls.getDistancePoint2Line(point1, group_ls.coeffs());
+    dist2 = group_ls.getDistancePoint2Line(point2, group_ls.coeffs());
+
+    if (dist1 > 1.5 || dist2 > 1.5) continue;
+
+    Point2d proj_p1, proj_p2;
+    proj_p1 = group_ls.getProjection(point1);
+    proj_p2 = group_ls.getProjection(point2);
+
+    if (group_ls.isOnLineSegment(proj_p1) && group_ls.isOnLineSegment(proj_p2))
+      return true;
   }
+
+  return false;
 }
 
 }  // namespace line_fitting

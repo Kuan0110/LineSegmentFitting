@@ -164,8 +164,8 @@ void LineSegment2D::clipLineSegment(const Point2d& point) {
   return;
 }
 
-Point2d LineSegment2D::getProjection(const Point2d& point) {
-	Point2d proj_point;
+Point2d LineSegment2D::getProjection(const Point2d& point) const {
+  Point2d proj_point;
   if (coeffs_[1] != 0.0) {
     double proj_y = (point[0] * coeffs_[0] + coeffs_[2]) / -coeffs_[1];
 
@@ -176,10 +176,19 @@ Point2d LineSegment2D::getProjection(const Point2d& point) {
 
     proj_point << point[0] + scale * v[0], proj_y + scale * v[1];
   } else {
-		proj_point << -coeffs_[2] / coeffs_[0], point[1];
+    proj_point << -coeffs_[2] / coeffs_[0], point[1];
   }
 
-	return proj_point;
+  return proj_point;
+}
+
+bool LineSegment2D::isOnLineSegment(const Point2d& point) const {
+  double x_min = endpoints_[0].x();
+  double x_max = endpoints_[1].x();
+
+  if (point.x() >= x_min && point.x() <= x_max) return true;
+
+  return false;
 }
 
 }  // namespace line_fitting

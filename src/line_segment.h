@@ -41,7 +41,9 @@ class LineSegment2D {
 
   void clipLineSegment(const Point2d& point);
 
-	Point2d getProjection(const Point2d& point);
+	Point2d getProjection(const Point2d& point) const;
+
+  bool isOnLineSegment(const Point2d& point) const;
 
   void inline addInliers(const Point2d& inlier) {
     raw_points_.push_back(inlier);
